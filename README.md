@@ -1,27 +1,19 @@
 # Binance Futures Testnet Trading Bot
 
-> A CLI-based Python application for placing MARKET and LIMIT orders on Binance Futures Testnet (USDT-M). Built to demonstrate clean architecture, input validation, async-aware order handling, and structured logging.
+> A CLI-based Python application for placing MARKET and LIMIT orders on Binance Futures Testnet (USDT-M).  
+> Built for the **Primetrade.ai AI Agent Developer Assessment**.
 
 ---
 
 ## 📌 Overview
 
-This project simulates real trading interactions against Binance's Futures Testnet API. It is **not** a strategy bot — it is an engineering demonstration focused on:
+This application interacts with the Binance Futures Testnet API to place real orders in a simulated trading environment. The focus is on clean architecture, safe input handling, and reliable logging — not strategy logic.
 
-- Correct API interaction patterns
-- Modular, maintainable code structure
-- Handling asynchronous order execution behavior
-- Traceability through structured logging
-
----
-
-## ⚙️ Features
-
-- Place **MARKET** and **LIMIT** orders via CLI
-- Supports **BUY** and **SELL** sides
-- Input validation before any API call is made
-- Logs API request, initial response, and re-fetched order status
-- Post-order status verification to handle Binance's async execution model
+**What it demonstrates:**
+- Correct usage of the Binance Futures REST API via `python-binance`
+- Separation of concerns across CLI, validation, API client, and order logic
+- Handling of Binance's asynchronous order execution (acknowledgement ≠ final status)
+- Structured, readable logging for debugging and auditability
 
 ---
 
@@ -30,154 +22,190 @@ This project simulates real trading interactions against Binance's Futures Testn
 ```
 binance-futures-testnet-bot/
 ├── bot/
-│   ├── client.py          # Binance API connection setup
-│   ├── orders.py          # Order execution logic
-│   ├── validators.py      # Input validation
-│   └── logging_config.py  # Logging configuration
-├── logs/                  # Runtime logs (git-ignored)
+│   ├── __init__.py
+│   ├── client.py          # Binance API client setup and connection
+│   ├── orders.py          # Order placement and status verification
+│   ├── validators.py      # Input validation logic
+│   └── logging_config.py  # Log formatting and file handler setup
+├── logs/                  # Runtime log files (auto-created, git-ignored)
 ├── sample_logs/           # Pre-captured logs for review
-├── cli.py                 # CLI entry point
+│   ├── market_order.log
+│   └── limit_order.log
+├── cli.py                 # CLI entry point (argparse)
+├── .env.example           # Example environment variable file
+├── .gitignore
 ├── requirements.txt
 └── README.md
 ```
 
-- **`bot/`** — All core logic, cleanly separated by responsibility
-- **`logs/`** — Generated at runtime; not committed to version control
-- **`sample_logs/`** — Included for evaluation; contains real MARKET and LIMIT order outputs
-
 ---
 
-## 🚀 Setup
+## ⚙️ Setup
 
-**1. Clone the repository**
+### 1. Clone the repository
 
 ```bash
 git clone https://github.com/your-username/binance-futures-testnet-bot.git
 cd binance-futures-testnet-bot
 ```
 
-**2. Install dependencies**
+### 2. Create and activate a virtual environment (recommended)
+
+```bash
+python -m venv venv
+source venv/bin/activate        # macOS/Linux
+venv\Scripts\activate           # Windows
+```
+
+### 3. Install dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-**3. Create a `.env` file in the project root**
+### 4. Configure API credentials
+
+Create a `.env` file in the project root:
 
 ```env
-API_KEY=your_binance_testnet_key
-API_SECRET=your_binance_testnet_secret
+API_KEY=your_binance_testnet_api_key
+API_SECRET=your_binance_testnet_api_secret
 ```
 
-> Get your Testnet API keys from [testnet.binancefuture.com](https://testnet.binancefuture.com)
+> **Get your Testnet credentials at:** [testnet.binancefuture.com](https://testnet.binancefuture.com)  
+> Register → Log in → API Management → Generate Key
 
 ---
 
 ## ▶️ Usage
 
-**MARKET Order**
+### MARKET Order
 
 ```bash
 python cli.py --symbol BTCUSDT --side BUY --type MARKET --quantity 0.001
 ```
 
-**LIMIT Order**
+### LIMIT Order
 
 ```bash
 python cli.py --symbol BTCUSDT --side SELL --type LIMIT --quantity 0.001 --price 80000
+```
+
+### All Available Arguments
+
+| Argument | Required | Description |
+|----------|----------|-------------|
+| `--symbol` | ✅ | Trading pair (e.g., `BTCUSDT`) |
+| `--side` | ✅ | `BUY` or `SELL` |
+| `--type` | ✅ | `MARKET` or `LIMIT` |
+| `--quantity` | ✅ | Order size (must be positive) |
+| `--price` | LIMIT only | Limit price (required for LIMIT orders) |
+
+---
+
+## 🖥️ Sample Output
+
+```
+========================================
+  ORDER SUMMARY
+========================================
+  Symbol   : BTCUSDT
+  Side     : BUY
+  Type     : MARKET
+  Quantity : 0.001
+========================================
+
+✅ Order placed successfully.
+
+  Order ID     : 3718937291
+  Status       : FILLED
+  Executed Qty : 0.001
+  Avg Price    : 83412.50
+
+Log saved to: logs/trading.log
 ```
 
 ---
 
 ## 🔄 How It Works
 
-1. User runs a CLI command with order parameters
-2. `argparse` parses the inputs
-3. `validators.py` validates symbol, side, type, quantity, and price
-4. Order request is sent to Binance Futures API via `orders.py`
-5. Initial API response is received and logged
-6. A `time.sleep(1)` delay is applied to allow execution time
-7. Order status is re-fetched using `futures_get_order()`
-8. Final status is logged and printed to the terminal
+1. User runs `cli.py` with order parameters
+2. `argparse` parses and surfaces all arguments
+3. `validators.py` validates all inputs locally (before any API call)
+4. `client.py` initializes the authenticated Binance Futures client
+5. `orders.py` sends the order and logs the initial API response
+6. A short delay (`time.sleep(1)`) allows the exchange to process the order
+7. Order status is **re-fetched** using `futures_get_order()` for the true final state
+8. Final result is printed to the terminal and written to the log file
 
----
-
-## 🔥 Key Design Decisions
-
-**Modular architecture**
-Each concern — API connection, order logic, validation, logging — lives in its own module. This makes the codebase easy to extend without side effects.
-
-**Validation before API calls**
-All inputs are validated locally before any network request is made. This prevents unnecessary API calls and surfaces errors early with clear messages.
-
-**Post-order status re-fetch**
-Binance's API returns an *acknowledgement*, not a final execution result. A raw response does not tell you if the order was actually filled. To handle this correctly, the bot waits briefly and then re-fetches the order using `futures_get_order()` — giving an accurate final status (`FILLED` or `NEW`).
-
-> This is the most important engineering decision in the project. Many implementations skip this step and incorrectly treat the acknowledgement as confirmation.
-
-**Structured logging**
-Every order cycle logs three things: the outgoing request, the initial API response, and the re-fetched status. This makes debugging straightforward and provides a full audit trail.
+> **Why re-fetch the order?**  
+> Binance's API returns an acknowledgement immediately — not the final execution result. A MARKET order may show `NEW` in the first response and `FILLED` a moment later. Re-fetching is the correct way to confirm actual execution status.
 
 ---
 
 ## 📊 Order Behavior
 
-| Order Type | Expected Status | Reason |
-|------------|-----------------|--------|
+| Order Type | Typical Final Status | Explanation |
+|------------|---------------------|-------------|
 | MARKET | `FILLED` | Executes immediately at best available price |
-| LIMIT | `NEW` | Queued; only fills when market reaches the specified price |
+| LIMIT | `NEW` | Queued; only fills when market reaches the set price |
 
-Both behaviors were verified through logs and the Binance Testnet UI.
+Both behaviors verified via logs and Binance Testnet UI.
 
 ---
 
 ## 📁 Logging
 
-- Runtime logs are written to `logs/trading.log`
-- Each log entry includes:
-  - Outgoing request parameters
-  - Initial API response
-  - Re-fetched order status (`executedQty`, `avgPrice`, `status`)
-- Sample logs for both MARKET and LIMIT orders are in `sample_logs/`
+Logs are written to `logs/trading.log` and include three entries per order cycle:
+
+| Log Entry | Contents |
+|-----------|----------|
+| **Request** | symbol, side, type, quantity, price |
+| **Initial Response** | orderId, raw status from API |
+| **Final Status** | re-fetched status, executedQty, avgPrice |
+
+Sample logs for both order types are included in `sample_logs/`.
+
+**Log format example:**
+```
+2025-07-10 14:22:01 INFO  Placing order: {'symbol': 'BTCUSDT', 'side': 'BUY', 'type': 'MARKET', 'quantity': 0.001}
+2025-07-10 14:22:01 INFO  Initial response: {'orderId': 3718937291, 'status': 'NEW', ...}
+2025-07-10 14:22:02 INFO  Final status: {'orderId': 3718937291, 'status': 'FILLED', 'executedQty': '0.001', 'avgPrice': '83412.5'}
+```
 
 ---
 
-## 🛡️ Error Handling
+## 🛡️ Validation & Error Handling
 
-The bot handles the following failure cases:
+**Input validation (before API call):**
+- `side` must be `BUY` or `SELL`
+- `type` must be `MARKET` or `LIMIT`
+- `quantity` must be a positive number
+- `price` is required when `type` is `LIMIT`
 
-- Invalid order side (not `BUY` or `SELL`)
-- Invalid order type (not `MARKET` or `LIMIT`)
-- Non-positive quantity
-- Missing price on LIMIT orders
-- API errors (invalid symbol, insufficient balance, etc.)
-- Network connectivity issues
+**Runtime error handling:**
+- Invalid trading symbol → caught and logged with message
+- API authentication failure → clear error printed, full trace logged
+- Network timeout or connection failure → exception caught, logged, user notified
+- Unexpected API errors → logged with full response for debugging
 
 ---
 
 ## 🔐 Security
 
-- API keys are stored in a `.env` file and loaded via `python-dotenv`
-- `.env` is listed in `.gitignore` and never committed
-- No secrets are hardcoded anywhere in the source
+- API credentials stored in `.env` (never hardcoded)
+- `.env` is listed in `.gitignore` — not committed to version control
+- `.env.example` included to show expected format without exposing secrets
 
 ---
 
-## ⚠️ Limitations
+## ⚠️ Assumptions & Limitations
 
-- Testnet only — not configured for live trading
-- No trading strategy or signal logic
-- No position tracking or portfolio management
-- No risk management (stop-loss, take-profit, etc.)
-
----
-
-## 🚀 Possible Improvements
-
-- Support for Stop-Limit and OCO orders
-- Real-time price validation before order placement
-- Retry mechanism for transient API failures
-- Web UI or dashboard for order monitoring
+- Designed for **Binance Futures Testnet only** — not production-safe
+- Testnet base URL used: `https://testnet.binancefuture.com`
+- No trading strategy, risk management, or position tracking
+- Quantity precision is not auto-adjusted for symbol lot size filters (manual input assumed correct)
+- `time.sleep(1)` is a reasonable delay for testnet; production would use WebSocket order events
 
 ---
 
@@ -185,8 +213,18 @@ The bot handles the following failure cases:
 
 | Tool | Purpose |
 |------|---------|
-| Python 3 | Core language |
-| `python-binance` | Binance API interaction |
+| Python 3.x | Core language |
+| `python-binance` | Binance Futures API client |
 | `argparse` | CLI input parsing |
-| `python-dotenv` | Secure API key management |
-| `logging` | Structured log output |
+| `python-dotenv` | Secure credential loading |
+| `logging` | Structured log output to file |
+
+---
+
+## 🚀 Possible Improvements
+
+- Stop-Limit / OCO order support
+- Real-time price validation before limit order placement
+- Retry logic with exponential backoff for transient API failures
+- Interactive CLI mode (menu-driven prompts via `Typer` or `Rich`)
+- WebSocket-based order status updates instead of polling
