@@ -1,47 +1,75 @@
 import argparse
 from bot.orders import place_order
-from bot.validators import *
+from bot import validators
 from bot.logging_config import setup_logging
 
 setup_logging()
 
-parser = argparse.ArgumentParser(description="Binance Futures Testnet Bot")
+def main():
+    parser = argparse.ArgumentParser(description="Binance Futures Testnet Bot")
 
-parser.add_argument("--symbol", required=True)
-parser.add_argument("--side", required=True)
-parser.add_argument("--type", required=True)
-parser.add_argument("--quantity", required=True)
-parser.add_argument("--price", required=False)
+    parser.add_argument("--symbol", required=True, help="Trading pair (e.g., BTCUSDT)")
+    parser.add_argument("--side", required=True, help="BUY or SELL")
+    parser.add_argument("--type", required=True, help="MARKET or LIMIT")
+    parser.add_argument("--quantity", required=True, help="Order quantity")
+    parser.add_argument("--price", required=False, help="Price (required for LIMIT)")
 
-args = parser.parse_args()
+    args = parser.parse_args()
 
-try:
-    validate_symbol(args.symbol)
-    validate_side(args.side)
-    validate_order_type(args.type)
-    validate_quantity(args.quantity)
+    try:
+        # ✅ Validation
+        validators.validate_symbol(args.symbol)
+        validators.validate_side(args.side)
+        validators.validate_order_type(args.type)
+        validators.validate_quantity(args.quantity)
 
-    if args.type == "LIMIT" and not args.price:
-        raise ValueError("Price required for LIMIT order")
+        if args.type == "LIMIT":
+            if not args.price:
+                raise ValueError("Price required for LIMIT order")
+            validators.validate_price(args.price)
 
-    print("\n📌 Order Summary:")
-    print(vars(args))
+        # ✅ Order summary
+        print("\n📌 Order Summary:")
+        print(vars(args))
 
-    order = place_order(
-        args.symbol,
-        args.side,
-        args.type,
-        args.quantity,
-        args.price
-    )
+        # ✅ Place order
+        order = place_order(
+            args.symbol,
+            args.side,
+            args.type,
+            args.quantity,
+            args.price
+        )
 
-    print("\n✅ Order Success:")
-    print({
-        "orderId": order.get("orderId"),
-        "status": order.get("status"),
-        "executedQty": order.get("executedQty"),
-        "avgPrice": order.get("avgPrice", "N/A")
-    })
+        # ✅ Result interpretation
+        print("\n📊 Order Result:")
 
-except Exception as e:
-    print(f"\n❌ Error: {str(e)}")
+        if order.get("type") == "MARKET":
+            if order.get("status") == "FILLED":
+                print("✅ Market order fully executed")
+            else:
+                print("⚠️ Market order not filled yet (unexpected)")
+
+        elif order.get("type") == "LIMIT":
+            if order.get("status") == "NEW":
+                print("⏳ Limit order placed and waiting for execution")
+            elif order.get("status") == "FILLED":
+                print("✅ Limit order executed")
+
+        # ✅ Clean output
+        print({
+            "orderId": order.get("orderId"),
+            "symbol": order.get("symbol"),
+            "side": order.get("side"),
+            "type": order.get("type"),
+            "status": order.get("status"),
+            "executedQty": order.get("executedQty"),
+            "avgPrice": order.get("avgPrice", "N/A")
+        })
+
+    except Exception as e:
+        print(f"\n❌ Error: {str(e)}")
+
+
+if __name__ == "__main__":
+    main()
