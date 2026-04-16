@@ -1,25 +1,40 @@
+# =========================
 # Environment variables
+# =========================
 .env
 
-# Logs
+# =========================
+# Logs (ignore runtime logs)
+# =========================
 logs/
 *.log
 
-# Python cache
+# Allow sample logs for submission
+!sample_logs/
+!sample_logs/*.log
+
+# =========================
+# Python cache files
+# =========================
 __pycache__/
 *.pyc
 *.pyo
+*.pyd
 
-# Virtual environment
+# =========================
+# Virtual environments
+# =========================
 venv/
 .env/
 
-# IDE files
+# =========================
+# IDE / Editor files
+# =========================
 .vscode/
 .idea/
 
+# =========================
 # OS files
+# =========================
 .DS_Store
 Thumbs.db
-# allow sample logs
-!sample_logs/

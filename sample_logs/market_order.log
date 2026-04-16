@@ -1,0 +1,8 @@
+REQUEST -> BTCUSDT BUY MARKET qty=0.001 price=None
+INITIAL RESPONSE -> status=NEW
+UPDATED RESPONSE -> status=FILLED executedQty=0.0010 avgPrice=74864.000000
+
+Interpretation:
+- Market order executed successfully
+- Full quantity filled instantly
+- Average execution price: 74864 USDT

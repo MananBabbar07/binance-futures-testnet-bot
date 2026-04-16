@@ -1,0 +1,8 @@
+REQUEST -> BTCUSDT SELL LIMIT qty=0.001 price=80000
+INITIAL RESPONSE -> status=NEW
+UPDATED RESPONSE -> status=NEW executedQty=0.0000 avgPrice=0.00
+
+Interpretation:
+- Limit order placed successfully
+- Order not executed yet
+- Waiting for market price to reach 80000 USDT
